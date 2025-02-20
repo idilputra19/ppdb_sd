@@ -1,0 +1,87 @@
+ppdb_sd/
+├── app/
+│   ├── config/
+│   │   └── Database.php
+│   ├── controllers/
+│   │   ├── AdminController.php
+│   │   ├── AuthController.php
+│   │   └── SiswaController.php
+│   ├── models/
+│   │   ├── Siswa.php
+│   │   ├── OrangTua.php
+│   │   ├── BiayaPendaftaran.php
+│   │   └── PendaftaranUlang.php
+│   └── views/
+│       ├── admin/
+│       │   ├── dashboard.php
+│       │   ├── verifikasi-siswa.php
+│       │   ├── verifikasi-pembayaran.php
+│       │   ├── pengumuman-kelulusan.php
+│       │   ├── laporan-pendaftaran.php
+│       │   └── manage-users.php
+│       ├── auth/
+│       │   ├── login.php
+│       │   ├── register.php
+│       │   └── logout.php
+│       ├── siswa/
+│       │   ├── dashboard.php
+│       │   ├── data-pribadi.php
+│       │   ├── upload-dokumen.php
+│       │   ├── data-orangtua.php
+│       │   ├── pembayaran.php
+│       │   ├── pengumuman.php
+│       │   └── daftar-ulang.php
+│       └── layouts/
+│           ├── header.php
+│           ├── footer.php
+│           ├── sidebar.php
+│           └── navbar.php
+├── public/
+│   ├── assets/
+│   │   ├── css/
+│   │   │   ├── adminlte.min.css
+│   │   │   ├── tailwind.css
+│   │   │   └── custom.css
+│   │   ├── js/
+│   │   │   ├── adminlte.min.js
+│   │   │   └── custom.js
+│   │   └── uploads/
+│   │       ├── foto/
+│   │       ├── kk/
+│   │       ├── kia/
+│   │       └── bukti_pembayaran/
+│   └── index.php
+├── .htaccess
+└── index.php
+Penjelasan struktur folder yang diperbarui:
+
+Direktori app/ berisi kode inti aplikasi.
+
+Direktori config/ berisi file konfigurasi seperti Database.php untuk pengaturan koneksi database.
+Direktori controllers/ berisi file controller untuk logika bisnis, seperti AdminController.php, AuthController.php, dan SiswaController.php.
+Direktori models/ berisi file model untuk interaksi dengan database, seperti Siswa.php, OrangTua.php, BiayaPendaftaran.php, dan PendaftaranUlang.php.
+Direktori views/ berisi file-file tampilan (view) untuk setiap halaman atau komponen.
+
+Direktori admin/ berisi file-file tampilan untuk halaman admin.
+Direktori auth/ berisi file-file tampilan untuk halaman autentikasi.
+Direktori siswa/ berisi file-file tampilan untuk halaman siswa.
+Direktori layouts/ berisi file-file tata letak umum seperti header, footer, sidebar, dan navbar.
+
+
+
+
+Direktori public/ berisi file-file yang dapat diakses langsung oleh pengguna.
+
+Direktori assets/ berisi file-file aset statis seperti CSS, JavaScript, dan gambar.
+
+Direktori uploads/ berisi subdirektori untuk menyimpan file yang diunggah, seperti foto, kk, kia, dan bukti pembayaran.
+
+
+File index.php adalah file entry point aplikasi yang menangani routing dan inisialisasi aplikasi.
+
+
+File .htaccess adalah file konfigurasi Apache untuk pengaturan URL rewriting.
+File index.php di direktori root adalah file index utama yang akan diarahkan ke public/index.php.
+
+Dengan struktur ini, kode aplikasi dipisahkan menjadi bagian-bagian yang lebih terorganisir sesuai dengan pola arsitektur MVC (Model-View-Controller). File-file tampilan (view) dikelompokkan berdasarkan jenis pengguna (admin dan siswa) dan tujuan halaman. File-file aset statis disimpan dalam direktori public/assets/.
+Pastikan untuk menyesuaikan path file dan URL dalam kode PHP sesuai dengan struktur folder yang diperbarui ini.
