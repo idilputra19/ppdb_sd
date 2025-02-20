@@ -1,25 +1,20 @@
-PPDB SD - Sistem Pendaftaran Peserta Didik Baru
+# PPDB SD - Sistem Pendaftaran Peserta Didik Baru
 
-Deskripsi
+![PPDB SD Logo](public/assets/logo.png)
 
+## Deskripsi
 PPDB SD adalah sebuah aplikasi berbasis web yang digunakan untuk mengelola proses Pendaftaran Peserta Didik Baru (PPDB) secara online. Aplikasi ini dibangun menggunakan arsitektur MVC (Model-View-Controller) dengan PHP dan MySQL sebagai backend.
 
-Fitur Utama
+## Fitur Utama
+- :lock: **Autentikasi Pengguna** (Login & Register untuk admin dan siswa)
+- :bar_chart: **Dashboard Admin** untuk mengelola data siswa, verifikasi pendaftaran, dan laporan
+- :busts_in_silhouette: **Dashboard Siswa** untuk mengisi data pribadi, mengunggah dokumen, dan melihat status pendaftaran
+- :moneybag: **Manajemen Pembayaran** termasuk verifikasi bukti pembayaran
+- :mega: **Pengumuman Kelulusan**
+- :page_facing_up: **Laporan Pendaftaran** dalam bentuk data yang dapat diekspor
 
-Autentikasi Pengguna (Login & Register untuk admin dan siswa)
-
-Dashboard Admin untuk mengelola data siswa, verifikasi pendaftaran, dan laporan
-
-Dashboard Siswa untuk mengisi data pribadi, mengunggah dokumen, dan melihat status pendaftaran
-
-Manajemen Pembayaran termasuk verifikasi bukti pembayaran
-
-Pengumuman Kelulusan
-
-Laporan Pendaftaran dalam bentuk data yang dapat diekspor
-
-Struktur Folder
-
+## Struktur Folder
+```
 ppdb_sd/
 ├── app/
 │   ├── config/
@@ -75,45 +70,38 @@ ppdb_sd/
 │   └── index.php
 ├── .htaccess
 └── index.php
+```
 
-Instalasi
+## Instalasi
+1. Clone repository ini:
+   ```bash
+   git clone https://github.com/username/ppdb_sd.git
+   ```
+2. Masuk ke direktori proyek:
+   ```bash
+   cd ppdb_sd
+   ```
+3. Buat database dan impor file SQL yang tersedia.
+4. Konfigurasi koneksi database di `app/config/Database.php`.
+5. Pastikan server lokal Anda (XAMPP atau lainnya) berjalan dengan PHP dan MySQL.
+6. Akses aplikasi melalui browser:
+   ```
+   http://localhost/ppdb_sd/public/
+   ```
 
-Clone repository ini:
+## Teknologi yang Digunakan
+- 🐘 PHP
+- 🛢️ MySQL
+- 🎨 HTML, CSS (Tailwind, AdminLTE)
+- ⚡ JavaScript
+- 🌐 Apache (untuk server lokal)
 
-git clone https://github.com/username/ppdb_sd.git
-
-Masuk ke direktori proyek:
-
-cd ppdb_sd
-
-Buat database dan impor file SQL yang tersedia.
-
-Konfigurasi koneksi database di app/config/Database.php.
-
-Pastikan server lokal Anda (XAMPP atau lainnya) berjalan dengan PHP dan MySQL.
-
-Akses aplikasi melalui browser:
-
-http://localhost/ppdb_sd/public/
-
-Teknologi yang Digunakan
-
-PHP
-
-MySQL
-
-HTML, CSS (Tailwind, AdminLTE)
-
-JavaScript
-
-Apache (untuk server lokal)
-
-Kontribusi
-
+## Kontribusi
 Jika ingin berkontribusi dalam pengembangan aplikasi ini, silakan fork repository ini dan buat pull request.
 
-Lisensi
-
+## Lisensi
 Aplikasi ini dirilis dengan lisensi MIT.
 
-Dibuat oleh Idil Putra
+---
+Dibuat oleh [Idil Putra](https://github.com/idilputra)
+
