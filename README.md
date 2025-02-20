@@ -102,6 +102,20 @@ Jika ingin berkontribusi dalam pengembangan aplikasi ini, silakan fork repositor
 ## Lisensi
 Aplikasi ini dirilis dengan lisensi MIT.
 
+## Alur Penggunaan Aplikasi ppdb sd
+1. Siswa registrasi akun
+2. Siswa login dan melengkapi data pribadi
+3. Upload foto KK dan KIA
+4. Mengisi data orang tua & wali (opsional)
+5. Admin verifikasi data siswa
+6. Setelah data diverifikasi, muncul biaya pendaftaran berbeda beda per siswa
+7. Siswa melakukan pembayaran dan mengunggah bukti
+8. Admin memverifikasi pembayaran
+9. Admin mengumumkan kelulusan
+10. Siswa yang lulus melakukan pendaftaran ulang
+11. siswa mencetak bukti mendaftar ulang
+
+
 ---
 Dibuat oleh [Idil Putra](https://github.com/idilputra)
 
