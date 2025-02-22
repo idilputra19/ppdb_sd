@@ -1,5 +1,6 @@
-<?php include '../app/views/layouts/header.php'; ?>
-
+<?php 
+require_once VIEW_PATH . '/layouts/header.php'; 
+?>
 <div class="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full space-y-8">
         <div>
@@ -17,8 +18,8 @@
                 <?php unset($_SESSION['error']); ?>
             </div>
         <?php endif; ?>
-
-        <form class="mt-8 space-y-6" action="/auth/login" method="POST">
+        
+        <form class="mt-8 space-y-6" action="<?php echo BASE_URL; ?>/auth/login" method="POST">
             <div class="rounded-md shadow-sm -space-y-px">
                 <div>
                     <label for="email" class="sr-only">Email</label>
@@ -33,20 +34,19 @@
                            placeholder="Password">
                 </div>
             </div>
-
             <div>
                 <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                     Login
                 </button>
             </div>
-
             <div class="text-center">
-                <a href="/auth/register" class="font-medium text-blue-600 hover:text-blue-500">
+                <a href="<?php echo BASE_URL; ?>/auth/register" class="font-medium text-blue-600 hover:text-blue-500">
                     Belum punya akun? Daftar sekarang
                 </a>
             </div>
         </form>
     </div>
 </div>
-
-<?php include '../app/views/layouts/footer.php'; ?>
+<?php 
+require_once VIEW_PATH . '/layouts/footer.php'; 
+?>

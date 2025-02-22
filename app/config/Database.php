@@ -4,6 +4,8 @@
  * Database Connection Class
  * Handles database connection and configuration
  */
+
+define('BASE_URL', 'http://localhost/ppdb_sd/');  // Sesuaikan dengan URL base Anda
 class Database {
     // Database configuration constants
     private const DB_HOST = "localhost";
