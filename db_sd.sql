@@ -346,3 +346,50 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+
+-- Table structure for table `nilai_seleksi`
+CREATE TABLE `nilai_seleksi` (
+  `id` int(11) NOT NULL,
+  `siswa_id` int(11) NOT NULL,
+  `nilai_ujian_tulis` decimal(5,2) DEFAULT NULL,
+  `nilai_wawancara` decimal(5,2) DEFAULT NULL,
+  `catatan_pewawancara` text DEFAULT NULL,
+  `tanggal_ujian_tulis` date DEFAULT NULL,
+  `tanggal_wawancara` date DEFAULT NULL,
+  `penguji_id` int(11) DEFAULT NULL,
+  `pewawancara_id` int(11) DEFAULT NULL,
+  `status_kelulusan` enum('pending','lulus','tidak_lulus') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Indexes for table `nilai_seleksi`
+ALTER TABLE `nilai_seleksi`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `siswa_id` (`siswa_id`),
+  ADD KEY `penguji_id` (`penguji_id`),
+  ADD KEY `pewawancara_id` (`pewawancara_id`),
+  ADD KEY `idx_nilai_status` (`status_kelulusan`);
+
+-- AUTO_INCREMENT for table `nilai_seleksi`
+ALTER TABLE `nilai_seleksi`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+-- Constraints for table `nilai_seleksi`
+ALTER TABLE `nilai_seleksi`
+  ADD CONSTRAINT `nilai_seleksi_ibfk_1` FOREIGN KEY (`siswa_id`) REFERENCES `siswa` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `nilai_seleksi_ibfk_2` FOREIGN KEY (`penguji_id`) REFERENCES `users` (`id`),
+  ADD CONSTRAINT `nilai_seleksi_ibfk_3` FOREIGN KEY (`pewawancara_id`) REFERENCES `users` (`id`);
+
+
+  CREATE TABLE notifications (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    type ENUM('info', 'success', 'warning', 'danger') DEFAULT 'info',
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

@@ -3,14 +3,17 @@ ppdb_sd/
 │   ├── config/
 │   │   └── Database.php
 │   ├── controllers/
-│   │   ├── AdminController.php
+│   │   ├── AdminController.php  
 │   │   ├── AuthController.php
-│   │   └── SiswaController.php
+│   │   ├── SiswaController.php
+│   │   └── NilaiController.php           # [NEW] Mengelola nilai ujian & wawancara
 │   ├── models/
 │   │   ├── Siswa.php
-│   │   ├── OrangTua.php
+│   │   ├── OrangTua.php 
 │   │   ├── BiayaPendaftaran.php
-│   │   └── PendaftaranUlang.php
+│   │   ├── PendaftaranUlang.php
+│   │   ├── NilaiUjian.php               # [NEW] Model untuk nilai ujian
+│   │   └── NilaiWawancara.php           # [NEW] Model untuk nilai wawancara
 │   └── views/
 │       ├── admin/
 │       │   ├── dashboard.php
@@ -18,7 +21,10 @@ ppdb_sd/
 │       │   ├── verifikasi-pembayaran.php
 │       │   ├── pengumuman-kelulusan.php
 │       │   ├── laporan-pendaftaran.php
-│       │   └── manage-users.php
+│       │   ├── manage-users.php
+│       │   ├── input-nilai-ujian.php     # [NEW] Form input nilai ujian
+│       │   ├── input-nilai-wawancara.php # [NEW] Form input nilai wawancara
+│       │   └── rekap-nilai.php           # [NEW] Halaman rekap semua nilai
 │       ├── auth/
 │       │   ├── login.php
 │       │   ├── register.php
@@ -30,7 +36,8 @@ ppdb_sd/
 │       │   ├── data-orangtua.php
 │       │   ├── pembayaran.php
 │       │   ├── pengumuman.php
-│       │   └── daftar-ulang.php
+│       │   ├── daftar-ulang.php
+│       │   └── hasil-nilai.php           # [NEW] Halaman siswa lihat nilai
 │       └── layouts/
 │           ├── header.php
 │           ├── footer.php
@@ -53,6 +60,31 @@ ppdb_sd/
 │   └── index.php
 ├── .htaccess
 └── index.php
+
+# Database Structure
+
+## Table: nilai_ujian
+- id (PRIMARY KEY)
+- id_siswa (FOREIGN KEY)
+- nilai_matematika 
+- nilai_bahasa_indonesia
+- nilai_tes_akademik
+- tanggal_ujian
+- created_at
+- updated_at
+
+## Table: nilai_wawancara
+- id (PRIMARY KEY)
+- id_siswa (FOREIGN KEY)
+- nilai_kepribadian
+- nilai_motorik
+- nilai_komunikasi  
+- catatan_pewawancara
+- tanggal_wawancara
+- created_at
+- updated_at
+
+
 Penjelasan struktur folder yang diperbarui:
 
 Direktori app/ berisi kode inti aplikasi.

@@ -1,184 +1,357 @@
 <?php
-require_once '../config/Database.php';
-
+/**
+ * AuthController handles user authentication, registration, and session management
+ */
 class AuthController {
     private $db;
-    private $conn;
-
+    private $user;
+    
+    // Configuration constants
+    private const PASSWORD_MIN_LENGTH = 8;
+    private const MAX_LOGIN_ATTEMPTS = 5;
+    private const LOGIN_TIMEOUT = 900; // 15 minutes in seconds
+    private const SESSION_LIFETIME = 3600; // 1 hour in seconds
+    
     public function __construct() {
-        $this->db = new Database();
-        $this->conn = $this->db->getConnection();
-    }
-
-    // Validate login credentials
-    public function login($email, $password) {
         try {
-            // Prepare SQL to prevent SQL injection
-            $stmt = $this->conn->prepare("SELECT * FROM users WHERE email = :email AND is_active = 1");
-            $stmt->bindParam(':email', $email);
-            $stmt->execute();
-            
-            // Fetch user
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            // Verify password
-            if ($user && password_verify($password, $user['password'])) {
-                // Start session
-                session_start();
-                
-                // Set session variables
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['username'] = $user['username'];
-                $_SESSION['role'] = $user['role'];
-                
-                // Update last login
-                $updateStmt = $this->conn->prepare("UPDATE users SET last_login = NOW() WHERE id = :id");
-                $updateStmt->bindParam(':id', $user['id']);
-                $updateStmt->execute();
-                
-                // Log activity
-                $this->logActivity($user['id'], 'login', 'User logged in successfully');
-                
-                return true;
-            }
-            
-            return false;
-        } catch(PDOException $e) {
-            // Log error
-            error_log("Login error: " . $e->getMessage());
-            return false;
+            $this->db = Database::getInstance()->getConnection();
+            $this->user = new User($this->db);
+            $this->initializeSession();
+        } catch (Exception $e) {
+            $this->logError('Authentication initialization failed', $e);
+            throw new SystemException('System initialization failed');
         }
     }
 
-    // User registration
-    public function register($username, $email, $password, $role = 'siswa') {
+    /**
+     * Initialize secure session settings
+     */
+    private function initializeSession(): void {
+        if (session_status() === PHP_SESSION_NONE) {
+            ini_set('session.cookie_httponly', '1');
+            ini_set('session.cookie_secure', '1');
+            ini_set('session.cookie_samesite', 'Strict');
+            ini_set('session.gc_maxlifetime', self::SESSION_LIFETIME);
+            session_start();
+        }
+    }
+
+    /**
+     * Default route - redirects to login
+     */
+    public function index(): void {
+        $this->redirect('/auth/login');
+    }
+
+    /**
+     * Handle user login
+     */
+    public function login(): void {
         try {
-            // Check if email already exists
-            $checkStmt = $this->conn->prepare("SELECT * FROM users WHERE email = :email");
-            $checkStmt->bindParam(':email', $email);
-            $checkStmt->execute();
-            
-            if ($checkStmt->rowCount() > 0) {
-                return false; // Email already exists
+            // Check if user is already logged in
+            if ($this->isAuthenticated()) {
+                $this->redirectBasedOnRole();
+                return;
             }
-            
-            // Hash password
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            
-            // Prepare insert statement
-            $stmt = $this->conn->prepare("
-                INSERT INTO users (username, email, password, role, is_active) 
-                VALUES (:username, :email, :password, :role, 1)
-            ");
-            
-            $stmt->bindParam(':username', $username);
-            $stmt->bindParam(':email', $email);
-            $stmt->bindParam(':password', $hashedPassword);
-            $stmt->bindParam(':role', $role);
-            
-            // Execute the statement
-            $result = $stmt->execute();
-            
-            if ($result) {
-                // Get the ID of the newly inserted user
-                $userId = $this->conn->lastInsertId();
-                
-                // Log activity
-                $this->logActivity($userId, 'register', 'New user registered');
-                
-                return $userId;
+
+            if ($this->isPostRequest()) {
+                $this->processLogin();
+                return;
             }
-            
-            return false;
-        } catch(PDOException $e) {
-            // Log error
-            error_log("Registration error: " . $e->getMessage());
-            return false;
+
+            // Show login page
+            $this->renderView('login', ['title' => 'Login']);
+        } catch (AuthenticationException $e) {
+            $this->setFlashMessage('error', $e->getMessage());
+            $this->redirect('/auth/login');
+        } catch (Exception $e) {
+            $this->handleError('Login error', $e);
         }
     }
 
-    // Log user activities
-    private function logActivity($userId, $activityType, $description) {
+    /**
+     * Handle user registration
+     */
+    public function register(): void {
         try {
-            $stmt = $this->conn->prepare("
-                INSERT INTO activity_logs (user_id, activity_type, description, ip_address, user_agent) 
-                VALUES (:user_id, :activity_type, :description, :ip_address, :user_agent)
-            ");
-            
-            $stmt->bindParam(':user_id', $userId);
-            $stmt->bindParam(':activity_type', $activityType);
-            $stmt->bindParam(':description', $description);
-            $stmt->bindParam(':ip_address', $_SERVER['REMOTE_ADDR']);
-            $stmt->bindParam(':user_agent', $_SERVER['HTTP_USER_AGENT']);
-            
-            $stmt->execute();
-        } catch(PDOException $e) {
-            // Log error but don't throw, as this is a secondary operation
-            error_log("Activity log error: " . $e->getMessage());
+            if ($this->isAuthenticated()) {
+                $this->redirectBasedOnRole();
+                return;
+            }
+
+            if ($this->isPostRequest()) {
+                $this->processRegistration();
+                return;
+            }
+
+            $this->renderView('register', ['title' => 'Register']);
+        } catch (ValidationException $e) {
+            $this->setFlashMessage('error', $e->getMessage());
+            $this->redirect('/auth/register');
+        } catch (Exception $e) {
+            $this->handleError('Registration error', $e);
         }
     }
 
-    // Password reset request
-    public function requestPasswordReset($email) {
+    /**
+     * Handle user logout
+     */
+    public function logout(): void {
         try {
-            // Check if email exists
-            $stmt = $this->conn->prepare("SELECT id FROM users WHERE email = :email");
-            $stmt->bindParam(':email', $email);
-            $stmt->execute();
-            
-            if ($stmt->rowCount() > 0) {
-                // Generate a unique reset token
-                $resetToken = bin2hex(random_bytes(32));
-                $expiryTime = date('Y-m-d H:i:s', strtotime('+1 hour'));
-                
-                // Store reset token (you'd need to add columns to users table)
-                $updateStmt = $this->conn->prepare("
-                    UPDATE users 
-                    SET reset_token = :token, 
-                        reset_token_expiry = :expiry 
-                    WHERE email = :email
-                ");
-                
-                $updateStmt->bindParam(':token', $resetToken);
-                $updateStmt->bindParam(':expiry', $expiryTime);
-                $updateStmt->bindParam(':email', $email);
-                $updateStmt->execute();
-                
-                return $resetToken;
-            }
-            
-            return false;
-        } catch(PDOException $e) {
-            error_log("Password reset request error: " . $e->getMessage());
-            return false;
+            $this->validateCSRFToken();
+            $this->terminateSession();
+            $this->redirect('/auth/login');
+        } catch (Exception $e) {
+            $this->handleError('Logout error', $e);
         }
     }
 
-    // Verify if user is logged in
-    public function isLoggedIn() {
-        session_start();
-        return isset($_SESSION['user_id']);
-    }
+    /**
+     * Process login attempt
+     */
+    private function processLogin(): void {
+        $this->validateCSRFToken();
+        $this->checkLoginAttempts();
 
-    // Get current user details
-    public function getCurrentUser() {
-        if ($this->isLoggedIn()) {
-            try {
-                $stmt = $this->conn->prepare("SELECT * FROM users WHERE id = :id");
-                $stmt->bindParam(':id', $_SESSION['user_id']);
-                $stmt->execute();
-                
-                return $stmt->fetch(PDO::FETCH_ASSOC);
-            } catch(PDOException $e) {
-                error_log("Get current user error: " . $e->getMessage());
-                return false;
-            }
+        $credentials = $this->validateLoginInput($_POST);
+        $user = $this->authenticateUser($credentials);
+
+        if (!$user) {
+            $this->incrementLoginAttempts();
+            throw new AuthenticationException('Email atau password salah');
         }
-        return false;
+
+        $this->createSecureSession($user);
+        $this->resetLoginAttempts();
+        $this->user->updateLastLogin($user['id']);
+        ActivityLogger::log('User logged in', $user['id']);
+        
+        $this->redirectBasedOnRole($user['role']);
     }
 
-    // Close database connection
-    public function __destruct() {
-        $this->db->closeConnection();
+    /**
+     * Process registration request
+     */
+    private function processRegistration(): void {
+        $this->validateCSRFToken();
+        $data = $this->validateRegistrationInput($_POST);
+        
+        // Start transaction
+        $this->db->beginTransaction();
+        
+        try {
+            // Create user account
+            $userId = $this->user->register($data);
+            if (!$userId) {
+                throw new SystemException('Failed to create user account');
+            }
+
+            // Create student record
+            $siswa = new Siswa($this->db);
+            $registrationNumber = $this->generateRegistrationNumber($userId);
+            
+            $studentData = [
+                'user_id' => $userId,
+                'no_pendaftaran' => $registrationNumber,
+                'status' => 'pending',
+                'created_at' => date('Y-m-d H:i:s')
+            ];
+
+            if (!$siswa->create($studentData)) {
+                throw new SystemException('Failed to create student record');
+            }
+
+            $this->db->commit();
+            ActivityLogger::log('New user registered', $userId);
+            
+            $this->setFlashMessage('success', 'Registrasi berhasil. Silahkan login.');
+            $this->redirect('/auth/login');
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw new SystemException('Registration failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Validate login input
+     */
+    private function validateLoginInput(array $input): array {
+        $validator = new Validator();
+        $rules = [
+            'email' => 'required|email|max:100',
+            'password' => 'required|min:' . self::PASSWORD_MIN_LENGTH
+        ];
+
+        if (!$validator->validate($input, $rules)) {
+            throw new ValidationException(implode(', ', $validator->getErrors()));
+        }
+
+        return [
+            'email' => filter_var($input['email'], FILTER_SANITIZE_EMAIL),
+            'password' => $input['password']
+        ];
+    }
+
+    /**
+     * Validate registration input
+     */
+    private function validateRegistrationInput(array $input): array {
+        $validator = new Validator();
+        $rules = [
+            'email' => 'required|email|max:100|unique:users',
+            'password' => 'required|min:' . self::PASSWORD_MIN_LENGTH,
+            'confirm_password' => 'required|same:password'
+        ];
+
+        if (!$validator->validate($input, $rules)) {
+            throw new ValidationException(implode(', ', $validator->getErrors()));
+        }
+
+        return [
+            'email' => filter_var($input['email'], FILTER_SANITIZE_EMAIL),
+            'password' => password_hash($input['password'], PASSWORD_ARGON2ID)
+        ];
+    }
+
+    /**
+     * Authenticate user credentials
+     */
+    private function authenticateUser(array $credentials): ?array {
+        $user = $this->user->findByEmail($credentials['email']);
+        
+        if (!$user || !password_verify($credentials['password'], $user['password'])) {
+            return null;
+        }
+
+        if (!$user['is_active']) {
+            throw new AuthenticationException('Account is inactive');
+        }
+
+        return $user;
+    }
+
+    /**
+     * Create secure session for authenticated user
+     */
+    private function createSecureSession(array $user): void {
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['role'] = $user['role'];
+        $_SESSION['email'] = $user['email'];
+        $_SESSION['created_at'] = time();
+        $_SESSION['last_activity'] = time();
+        
+        // Regenerate session ID to prevent session fixation
+        session_regenerate_id(true);
+    }
+
+    /**
+     * Generate unique registration number
+     */
+    private function generateRegistrationNumber(int $userId): string {
+        $year = date('y');
+        $sequence = str_pad($userId, 4, '0', STR_PAD_LEFT);
+        $random = substr(uniqid(), -3);
+        return "PPDB{$year}{$sequence}{$random}";
+    }
+
+    /**
+     * Check login attempts to prevent brute force
+     */
+    private function checkLoginAttempts(): void {
+        $attempts = $_SESSION['login_attempts'] ?? 0;
+        $lastAttempt = $_SESSION['last_login_attempt'] ?? 0;
+
+        if ($attempts >= self::MAX_LOGIN_ATTEMPTS) {
+            $timeLeft = self::LOGIN_TIMEOUT - (time() - $lastAttempt);
+            if ($timeLeft > 0) {
+                throw new AuthenticationException(
+                    "Too many failed attempts. Please try again in " . 
+                    ceil($timeLeft / 60) . " minutes."
+                );
+            }
+            $this->resetLoginAttempts();
+        }
+    }
+
+    /**
+     * Increment failed login attempts
+     */
+    private function incrementLoginAttempts(): void {
+        $_SESSION['login_attempts'] = ($_SESSION['login_attempts'] ?? 0) + 1;
+        $_SESSION['last_login_attempt'] = time();
+    }
+
+    /**
+     * Reset login attempts counter
+     */
+    private function resetLoginAttempts(): void {
+        unset($_SESSION['login_attempts'], $_SESSION['last_login_attempt']);
+    }
+
+    /**
+     * Terminate user session securely
+     */
+    private function terminateSession(): void {
+        $_SESSION = [];
+        
+        if (isset($_COOKIE[session_name()])) {
+            setcookie(session_name(), '', time() - 3600, '/');
+        }
+        
+        session_destroy();
+    }
+
+    /**
+     * Helper methods
+     */
+    private function isAuthenticated(): bool {
+        return isset($_SESSION['user_id']) && 
+               isset($_SESSION['role']) && 
+               isset($_SESSION['created_at']);
+    }
+
+    private function isPostRequest(): bool {
+        return $_SERVER['REQUEST_METHOD'] === 'POST';
+    }
+
+    private function validateCSRFToken(): void {
+        if (!Security::validateCSRFToken($_POST['csrf_token'] ?? '')) {
+            throw new SecurityException('Invalid CSRF token');
+        }
+    }
+
+    private function redirectBasedOnRole(?string $role = null): void {
+        $role = $role ?? $_SESSION['role'];
+        $this->redirect($role === 'admin' ? '/admin/dashboard' : '/siswa/dashboard');
+    }
+
+    private function renderView(string $view, array $data = []): void {
+        extract($data);
+        require_once "../app/views/auth/$view.php";
+    }
+
+    private function setFlashMessage(string $type, string $message): void {
+        $_SESSION[$type] = $message;
+    }
+
+    private function redirect(string $path): void {
+        header("Location: $path");
+        exit;
+    }
+
+    private function logError(string $message, Exception $e): void {
+        error_log("[$message] " . $e->getMessage());
+    }
+
+    private function handleError(string $context, Exception $e): void {
+        $this->logError($context, $e);
+        $this->setFlashMessage('error', 'System error occurred');
+        $this->redirect('/error');
     }
 }
+
+// Custom Exceptions
+class ValidationException extends Exception {}
+class AuthenticationException extends Exception {}
+class SecurityException extends Exception {}
+class SystemException extends Exception {}
