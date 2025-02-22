@@ -1,9 +1,13 @@
 <?php
+
 /**
  * AuthController handles user authentication, registration, and session management
  */
 class AuthController {
+    /** @var PDO */
     private $db;
+    
+    /** @var User */
     private $user;
     
     // Configuration constants
@@ -12,9 +16,15 @@ class AuthController {
     private const LOGIN_TIMEOUT = 900; // 15 minutes in seconds
     private const SESSION_LIFETIME = 3600; // 1 hour in seconds
     
+    /**
+     * Initialize AuthController
+     * 
+     * @throws SystemException
+     */
     public function __construct() {
         try {
-            $this->db = Database::getInstance()->getConnection();
+            $database = new Database();
+            $this->db = $database->getConnection();
             $this->user = new User($this->db);
             $this->initializeSession();
         } catch (Exception $e) {
@@ -48,7 +58,6 @@ class AuthController {
      */
     public function login(): void {
         try {
-            // Check if user is already logged in
             if ($this->isAuthenticated()) {
                 $this->redirectBasedOnRole();
                 return;
@@ -59,7 +68,6 @@ class AuthController {
                 return;
             }
 
-            // Show login page
             $this->renderView('login', ['title' => 'Login']);
         } catch (AuthenticationException $e) {
             $this->setFlashMessage('error', $e->getMessage());
@@ -108,6 +116,7 @@ class AuthController {
 
     /**
      * Process login attempt
+     * @throws AuthenticationException|SecurityException
      */
     private function processLogin(): void {
         $this->validateCSRFToken();
@@ -124,29 +133,27 @@ class AuthController {
         $this->createSecureSession($user);
         $this->resetLoginAttempts();
         $this->user->updateLastLogin($user['id']);
-        ActivityLogger::log('User logged in', $user['id']);
         
+        ActivityLogger::log('User logged in', $user['id']);
         $this->redirectBasedOnRole($user['role']);
     }
 
     /**
      * Process registration request
+     * @throws ValidationException|SystemException
      */
     private function processRegistration(): void {
         $this->validateCSRFToken();
         $data = $this->validateRegistrationInput($_POST);
         
-        // Start transaction
-        $this->db->beginTransaction();
-        
         try {
-            // Create user account
+            $this->db->beginTransaction();
+
             $userId = $this->user->register($data);
             if (!$userId) {
                 throw new SystemException('Failed to create user account');
             }
 
-            // Create student record
             $siswa = new Siswa($this->db);
             $registrationNumber = $this->generateRegistrationNumber($userId);
             
@@ -174,6 +181,7 @@ class AuthController {
 
     /**
      * Validate login input
+     * @throws ValidationException
      */
     private function validateLoginInput(array $input): array {
         $validator = new Validator();
@@ -194,6 +202,7 @@ class AuthController {
 
     /**
      * Validate registration input
+     * @throws ValidationException
      */
     private function validateRegistrationInput(array $input): array {
         $validator = new Validator();
@@ -215,6 +224,7 @@ class AuthController {
 
     /**
      * Authenticate user credentials
+     * @throws AuthenticationException
      */
     private function authenticateUser(array $credentials): ?array {
         $user = $this->user->findByEmail($credentials['email']);
@@ -240,7 +250,6 @@ class AuthController {
         $_SESSION['created_at'] = time();
         $_SESSION['last_activity'] = time();
         
-        // Regenerate session ID to prevent session fixation
         session_regenerate_id(true);
     }
 
@@ -256,6 +265,7 @@ class AuthController {
 
     /**
      * Check login attempts to prevent brute force
+     * @throws AuthenticationException
      */
     private function checkLoginAttempts(): void {
         $attempts = $_SESSION['login_attempts'] ?? 0;
@@ -273,37 +283,24 @@ class AuthController {
         }
     }
 
-    /**
-     * Increment failed login attempts
-     */
+    // Additional helper methods...
     private function incrementLoginAttempts(): void {
         $_SESSION['login_attempts'] = ($_SESSION['login_attempts'] ?? 0) + 1;
         $_SESSION['last_login_attempt'] = time();
     }
 
-    /**
-     * Reset login attempts counter
-     */
     private function resetLoginAttempts(): void {
         unset($_SESSION['login_attempts'], $_SESSION['last_login_attempt']);
     }
 
-    /**
-     * Terminate user session securely
-     */
     private function terminateSession(): void {
         $_SESSION = [];
-        
         if (isset($_COOKIE[session_name()])) {
             setcookie(session_name(), '', time() - 3600, '/');
         }
-        
         session_destroy();
     }
 
-    /**
-     * Helper methods
-     */
     private function isAuthenticated(): bool {
         return isset($_SESSION['user_id']) && 
                isset($_SESSION['role']) && 
